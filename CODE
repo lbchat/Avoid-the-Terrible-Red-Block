@@ -1,0 +1,112 @@
+import pygame
+import random
+
+# Game Setup
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+PLAYER_SIZE = 50
+OBSTACLE_SIZE = 50
+
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+GRAY = (128, 128, 128)
+
+# Player Class
+class Player:
+    def __init__(self):
+        self.x = SCREEN_WIDTH // 2
+        self.y = SCREEN_HEIGHT - PLAYER_SIZE
+        self.speed = 5
+
+    def move(self, keys):
+        if keys[pygame.K_LEFT] and self.x > 0:
+            self.x -= self.speed
+        if keys[pygame.K_RIGHT] and self.x < SCREEN_WIDTH - PLAYER_SIZE:
+            self.x += self.speed
+
+# Obstacle Class
+class Obstacle:
+    def __init__(self):
+        self.x = random.randint(0, SCREEN_WIDTH - OBSTACLE_SIZE)
+        self.y = 0
+        self.speed = random.randint(3, 7)
+
+    def move(self):
+        self.y += self.speed
+
+# Main Game
+def main():
+    pygame.init()
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    pygame.display.set_caption("Road Crossing Game")
+    clock = pygame.time.Clock()
+    font = pygame.font.Font(None, 36)
+
+    player = Player()
+    obstacles = []
+    score = 0
+    paused = False
+
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            
+            # Pause/Unpause logic
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:
+                    paused = not paused
+
+        if not paused:
+            keys = pygame.key.get_pressed()
+            player.move(keys)
+
+            # Spawn Obstacles
+            if random.randint(1, 60) == 1:
+                obstacles.append(Obstacle())
+
+            # Move Obstacles
+            for obstacle in obstacles[:]:
+                obstacle.move()
+                if obstacle.y > SCREEN_HEIGHT:
+                    obstacles.remove(obstacle)
+                    score += 1
+
+                # Collision Detection
+                if (player.x < obstacle.x + OBSTACLE_SIZE and
+                    player.x + PLAYER_SIZE > obstacle.x and
+                    player.y < obstacle.y + OBSTACLE_SIZE and
+                    player.y + PLAYER_SIZE > obstacle.y):
+                    running = False
+
+        # Drawing
+        screen.fill(GREEN)
+        pygame.draw.rect(screen, BLACK, (player.x, player.y, PLAYER_SIZE, PLAYER_SIZE))
+
+        for obstacle in obstacles:
+            pygame.draw.rect(screen, RED, (obstacle.x, obstacle.y, OBSTACLE_SIZE, OBSTACLE_SIZE))
+
+        # Display Score
+        score_text = font.render(f"Score: {score}", True, BLACK)
+        screen.blit(score_text, (10, 10))
+
+        # Pause Screen
+        if paused:
+            pause_text = font.render("PAUSED", True, RED)
+            instructions = font.render("Press P to continue", True, BLACK)
+            screen.blit(pause_text, (SCREEN_WIDTH//2 - pause_text.get_width()//2, SCREEN_HEIGHT//2 - 50))
+            screen.blit(instructions, (SCREEN_WIDTH//2 - instructions.get_width()//2, SCREEN_HEIGHT//2 + 50))
+
+        pygame.display.flip()
+        clock.tick(60)
+
+    print(f"Game Over! Your Score: {score}")
+    pygame.quit()
+
+# Run the game
+if __name__ == "__main__":
+    main()
